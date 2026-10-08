@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Outer Cyan Ring -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#06B6D4"
+        android:strokeWidth="3.5"
+        android:pathData="M54,54m-28,0a28,28 0 1,0 56,0a28,28 0 1,0 -56,0" />
+    <!-- Reticle ticks -->
+    <path
+        android:fillColor="#06B6D4"
+        android:pathData="M52,20h4v8h-4z M52,80h4v8h-4z M20,52h8v4h-8z M80,52h8v4h-8z" />
+    <!-- Inner Glowing Core -->
+    <path
+        android:fillColor="#10B981"
+        android:pathData="M54,54m-14,0a14,14 0 1,0 28,0a14,14 0 1,0 -28,0" />
+    <!-- Center Highlight -->
+    <path
+        android:fillColor="#ECFDF5"
+        android:pathData="M54,54m-6,0a6,6 0 1,0 12,0a6,6 0 1,0 -12,0" />
+</vector>
