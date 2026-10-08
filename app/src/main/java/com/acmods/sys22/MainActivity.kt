@@ -86,17 +86,17 @@ class MainActivity : AppCompatActivity() {
 
         webView.webViewClient = object : WebViewClientCompat() {
             override fun shouldInterceptRequest(
-                view: WebView?,
-                request: WebResourceRequest?
+                view: WebView,
+                request: WebResourceRequest
             ): WebResourceResponse? {
-                return request?.url?.let { assetLoader.shouldInterceptRequest(it) }
+                return assetLoader.shouldInterceptRequest(request.url)
             }
 
             override fun shouldOverrideUrlLoading(
-                view: WebView?,
-                request: WebResourceRequest?
+                view: WebView,
+                request: WebResourceRequest
             ): Boolean {
-                val url = request?.url?.toString() ?: return false
+                val url = request.url.toString()
                 // Keep internal appassets in WebView; open external links in browser
                 return if (url.startsWith("https://appassets.androidplatform.net")) {
                     false
