@@ -1,9 +1,12 @@
 package com.acmods.sys22
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.webkit.*
@@ -13,9 +16,12 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
+import com.acmods.sys22.bridge.SYS22NativeBridge
+import com.acmods.sys22.notification.NotificationHelper
 
 class MainActivity : AppCompatActivity() {
 
@@ -41,6 +47,30 @@ class MainActivity : AppCompatActivity() {
             fileChooserCallback = null
         }
 
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            Toast.makeText(this, "SYS22: Mobile Notifications Activated", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
+    fun isNotificationPermissionGranted(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,6 +81,14 @@ class MainActivity : AppCompatActivity() {
         WindowCompat.getInsetsController(window, window.decorView).apply {
             isAppearanceLightStatusBars = false
             isAppearanceLightNavigationBars = false
+        }
+
+        // Initialize Android Notification Channels
+        NotificationHelper(this).createNotificationChannels()
+
+        // Check for notification permission
+        if (!isNotificationPermissionGranted()) {
+            requestNotificationPermission()
         }
 
         webView = WebView(this).apply {
@@ -75,6 +113,9 @@ class MainActivity : AppCompatActivity() {
                 setSupportZoom(false)
                 displayZoomControls = false
             }
+
+            // Bind Native Android Bridge to JavaScript
+            addJavascriptInterface(SYS22NativeBridge(this@MainActivity), "SYS22Native")
         }
         setContentView(webView)
 
@@ -108,6 +149,11 @@ class MainActivity : AppCompatActivity() {
                         false
                     }
                 }
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                injectBridgeScript(view)
             }
         }
 
@@ -174,6 +220,60 @@ class MainActivity : AppCompatActivity() {
 
         // Launch Elite Command App on local HTTPS secure origin
         webView.loadUrl("https://appassets.androidplatform.net/assets/web/index.html")
+    }
+
+    private fun injectBridgeScript(view: WebView?) {
+        val script = """
+            (function() {
+                if (window.__sys22_bridge_injected__) return;
+                window.__sys22_bridge_injected__ = true;
+
+                // 1. Hook localStorage.setItem for real-time bidirectional syncing
+                const originalSetItem = localStorage.setItem;
+                localStorage.setItem = function(key, val) {
+                    originalSetItem.apply(this, arguments);
+                    try {
+                        if (window.SYS22Native && [
+                            's22_criticalTargets',
+                            's22_tasks',
+                            's22_wakeTime',
+                            's22_sleepTime',
+                            's22_totalFocus',
+                            's22_goalMins'
+                        ].includes(key)) {
+                            window.SYS22Native.onStorageUpdated(key, String(val));
+                        }
+                    } catch (e) {
+                        console.error('[SYS22 Native Bridge] Storage hook error:', e);
+                    }
+                };
+
+                // 2. Initial Full Sync from localStorage to Android Native Engine
+                function performFullSync() {
+                    try {
+                        if (window.SYS22Native) {
+                            const payload = {
+                                criticalTargets: localStorage.getItem('s22_criticalTargets') || '[]',
+                                tasks: localStorage.getItem('s22_tasks') || '[]',
+                                wakeTime: localStorage.getItem('s22_wakeTime') || '03:30',
+                                sleepTime: localStorage.getItem('s22_sleepTime') || '20:30',
+                                totalFocus: parseInt(localStorage.getItem('s22_totalFocus') || '0') || 0,
+                                goalMins: parseInt(localStorage.getItem('s22_goalMins') || '180') || 180
+                            };
+                            window.SYS22Native.syncAll(JSON.stringify(payload));
+                        }
+                    } catch (err) {
+                        console.error('[SYS22 Native Bridge] Sync error:', err);
+                    }
+                }
+
+                performFullSync();
+                setTimeout(performFullSync, 1500);
+                setTimeout(performFullSync, 4000);
+            })();
+        """.trimIndent()
+
+        view?.evaluateJavascript(script, null)
     }
 
     override fun onResume() {
