@@ -19,11 +19,18 @@ object SYS22AlarmScheduler {
 
     const val ACTION_FIRE_ALARM = "com.acmods.sys22.ACTION_FIRE_ALARM"
 
+    /**
+     * Schedules ONLY the most critical alerts:
+     * 1. Important exams (1 day before, and 30 minutes before).
+     * 2. User tasks with exact scheduled times for today.
+     * No background spam, no routine noise, no repetitive notifications.
+     */
+    @Synchronized
     fun scheduleAll(context: Context) {
         val storage = StorageManager.getInstance(context)
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
 
-        // 1. Cancel previous alarms
+        // 1. Cancel previously active alarms
         val previousAlarmIds = storage.getActiveAlarmIds()
         for (id in previousAlarmIds) {
             cancelAlarm(context, alarmManager, id)
@@ -32,29 +39,23 @@ object SYS22AlarmScheduler {
         val activeAlarmIds = mutableSetOf<Int>()
         val now = System.currentTimeMillis()
 
-        // 2. Schedule Critical Targets / Exams
+        // 2. Schedule Exams / Critical Targets (Max 2 clean alerts per exam)
         val targets = storage.getCriticalTargets()
         for (target in targets) {
-            scheduleTargetTiers(context, alarmManager, target, now, activeAlarmIds)
+            scheduleExamAlerts(context, alarmManager, target, now, activeAlarmIds)
         }
 
-        // 3. Schedule Recurring Timetable Classes and Tasks
+        // 3. Schedule Exact User Tasks for Today (Excludes fixed school timetables)
         val tasks = storage.getTasks()
         for (task in tasks) {
-            scheduleTaskReminders(context, alarmManager, task, now, activeAlarmIds)
+            scheduleExactUserTask(context, alarmManager, task, now, activeAlarmIds)
         }
 
-        // 4. Schedule Wake & Sleep Protocols
-        scheduleRoutineReminders(context, alarmManager, storage, now, activeAlarmIds)
-
-        // 5. Schedule Daily Focus Checkpoint
-        scheduleFocusCheckpoint(context, alarmManager, now, activeAlarmIds)
-
-        // Save active IDs for future cleanup
+        // Save active IDs
         storage.saveActiveAlarmIds(activeAlarmIds)
     }
 
-    private fun scheduleTargetTiers(
+    private fun scheduleExamAlerts(
         context: Context,
         alarmManager: AlarmManager,
         target: CriticalTarget,
@@ -62,198 +63,101 @@ object SYS22AlarmScheduler {
         activeIds: MutableSet<Int>
     ) {
         val examTime = parseDateTime(target.date) ?: return
-        if (examTime <= now) return // Past target
+        if (examTime <= now + 60_000) return // Past or already starting
 
-        val priorityTag = target.priority?.uppercase() ?: "CRITICAL"
+        val cleanTitle = target.title.trim()
 
-        // Tier D-7 (7 days before)
-        val d7 = examTime - 7L * 24 * 3600 * 1000
-        if (d7 > now) {
-            val id = generateAlarmId("CT_D7", target.id)
-            scheduleExactAlarm(
-                context, alarmManager, id, d7,
-                targetId = target.id,
-                type = "EXAM",
-                title = "⚡ TACTICAL WARNING: D-7 TO TARGET",
-                message = "[${target.title}] is approaching in 7 days. Threat Level: $priorityTag.",
-                channelId = NotificationHelper.CHANNEL_EXAMS
-            )
-            activeIds.add(id)
-        }
-
-        // Tier D-3 (3 days before)
-        val d3 = examTime - 3L * 24 * 3600 * 1000
-        if (d3 > now) {
-            val id = generateAlarmId("CT_D3", target.id)
-            scheduleExactAlarm(
-                context, alarmManager, id, d3,
-                targetId = target.id,
-                type = "EXAM",
-                title = "🚨 CRITICAL WINDOW: D-3",
-                message = "72 hours remaining for [${target.title}]. Review tactical intel notes.",
-                channelId = NotificationHelper.CHANNEL_EXAMS
-            )
-            activeIds.add(id)
-        }
-
-        // Tier D-1 (1 day before)
+        // Alert 1: Day Before (D-1) — 24 hours before exam
         val d1 = examTime - 24L * 3600 * 1000
-        if (d1 > now) {
-            val id = generateAlarmId("CT_D1", target.id)
+        if (d1 > now + 60_000) {
+            val id = generateAlarmId("EXAM_D1", target.id)
             scheduleExactAlarm(
                 context, alarmManager, id, d1,
                 targetId = target.id,
                 type = "EXAM",
-                title = "⚔️ POINT OF NO RETURN: TOMORROW",
-                message = "Tomorrow is engagement day for [${target.title}]. Execute final review protocol.",
+                title = "📌 تذكير: امتحان غداً",
+                message = "غداً موعد امتحان: $cleanTitle",
                 channelId = NotificationHelper.CHANNEL_EXAMS
             )
             activeIds.add(id)
         }
 
-        // Tier T-2h (2 hours before)
-        val t2h = examTime - 2L * 3600 * 1000
-        if (t2h > now) {
-            val id = generateAlarmId("CT_T2H", target.id)
-            scheduleExactAlarm(
-                context, alarmManager, id, t2h,
-                targetId = target.id,
-                type = "EXAM",
-                title = "🎯 TARGET ENGAGEMENT: T-2 HOURS",
-                message = "Target [${target.title}] starts in 2 hours. Prime mental focus.",
-                channelId = NotificationHelper.CHANNEL_EXAMS
-            )
-            activeIds.add(id)
-        }
-
-        // Tier T-30m (30 minutes before)
+        // Alert 2: 30 minutes before exam
         val t30m = examTime - 30L * 60 * 1000
-        if (t30m > now) {
-            val id = generateAlarmId("CT_T30M", target.id)
+        if (t30m > now + 60_000) {
+            val id = generateAlarmId("EXAM_T30M", target.id)
             scheduleExactAlarm(
                 context, alarmManager, id, t30m,
                 targetId = target.id,
                 type = "EXAM",
-                title = "⚡ ENGAGEMENT IMMINENT: T-30 MINS",
-                message = "30 minutes until [${target.title}]. Enter target execution zone.",
+                title = "🚨 اقترب موعد الامتحان",
+                message = "يبدأ امتحان [$cleanTitle] خلال 30 دقيقة",
                 channelId = NotificationHelper.CHANNEL_EXAMS
             )
             activeIds.add(id)
         }
     }
 
-    private fun scheduleTaskReminders(
+    private fun scheduleExactUserTask(
         context: Context,
         alarmManager: AlarmManager,
         task: TaskItem,
         now: Long,
         activeIds: MutableSet<Int>
     ) {
-        val timeStr = task.scheduledTime ?: return
+        // Ignore background school template blocks and logistic fillers
+        if (task.isSchool == true || task.blockType.equals("logistic", ignoreCase = true)) {
+            return
+        }
+
+        val timeStr = task.scheduledTime?.trim() ?: return
+        if (timeStr.isBlank()) return
+
         val parts = timeStr.split(":").mapNotNull { it.toIntOrNull() }
         if (parts.size != 2) return
         val hour = parts[0]
         val minute = parts[1]
 
-        if (task.isRecurring == true && !task.recurringDays.isNullOrEmpty()) {
-            // Recurring schedule (e.g. school schedule Mon-Sat)
-            for (dayIdx in task.recurringDays) {
-                val nextTrigger = getNextOccurrence(dayIdx, hour, minute, -10)
-                if (nextTrigger > now) {
-                    val id = generateAlarmId("TASK_REC_${dayIdx}", task.id)
-                    val label = if (task.isSchool == true) "School Timetable" else "Scheduled Block"
-                    scheduleExactAlarm(
-                        context, alarmManager, id, nextTrigger,
-                        targetId = task.id,
-                        type = "SCHEDULE",
-                        title = "📅 $label: ${task.title}",
-                        message = "Starts in 10 minutes at $timeStr. Prepare materials.",
-                        channelId = NotificationHelper.CHANNEL_SCHEDULE
-                    )
-                    activeIds.add(id)
-                }
-            }
-        } else {
-            // One-off scheduled task for today
-            val todayTrigger = getTodayOccurrence(hour, minute, -10)
-            if (todayTrigger > now) {
-                val id = generateAlarmId("TASK_ONE", task.id)
-                scheduleExactAlarm(
-                    context, alarmManager, id, todayTrigger,
-                    targetId = task.id,
-                    type = "SCHEDULE",
-                    title = "📋 MISSION SCHEDULED: ${task.title}",
-                    message = "Starts in 10 minutes at $timeStr.",
-                    channelId = NotificationHelper.CHANNEL_SCHEDULE
-                )
-                activeIds.add(id)
-            }
+        val calNow = Calendar.getInstance()
+        val currentDayOfWeek = when (calNow.get(Calendar.DAY_OF_WEEK)) {
+            Calendar.MONDAY -> 1
+            Calendar.TUESDAY -> 2
+            Calendar.WEDNESDAY -> 3
+            Calendar.THURSDAY -> 4
+            Calendar.FRIDAY -> 5
+            Calendar.SATURDAY -> 6
+            Calendar.SUNDAY -> 7
+            else -> 1
         }
-    }
 
-    private fun scheduleRoutineReminders(
-        context: Context,
-        alarmManager: AlarmManager,
-        storage: StorageManager,
-        now: Long,
-        activeIds: MutableSet<Int>
-    ) {
-        // 1. Wake Time Reminder
-        val wakeStr = storage.getWakeTime()
-        val wakeParts = wakeStr.split(":").mapNotNull { it.toIntOrNull() }
-        if (wakeParts.size == 2) {
-            val wakeTrigger = getNextDailyOccurrence(wakeParts[0], wakeParts[1], 0)
-            if (wakeTrigger > now) {
-                val id = generateAlarmId("ROUTINE", "WAKE")
-                scheduleExactAlarm(
-                    context, alarmManager, id, wakeTrigger,
-                    targetId = "wake_routine",
-                    type = "WAKE",
-                    title = "☀️ SYSTEM AWAKENING: INITIATE MORNING RULES",
-                    message = "System wake time reached ($wakeStr). Execute morning protocols & hydrate.",
-                    channelId = NotificationHelper.CHANNEL_ROUTINES
-                )
-                activeIds.add(id)
+        // If task is recurring, only schedule if today is in its recurringDays
+        if (task.isRecurring == true) {
+            val days = task.recurringDays ?: emptyList()
+            if (!days.contains(currentDayOfWeek)) {
+                return
             }
         }
 
-        // 2. Sleep Time Reminder (T-30 mins)
-        val sleepStr = storage.getSleepTime()
-        val sleepParts = sleepStr.split(":").mapNotNull { it.toIntOrNull() }
-        if (sleepParts.size == 2) {
-            val sleepTrigger = getNextDailyOccurrence(sleepParts[0], sleepParts[1], -30)
-            if (sleepTrigger > now) {
-                val id = generateAlarmId("ROUTINE", "SLEEP_T30")
-                scheduleExactAlarm(
-                    context, alarmManager, id, sleepTrigger,
-                    targetId = "sleep_routine",
-                    type = "SLEEP",
-                    title = "🌙 SLEEP CYCLE PREPARATION: T-30 MINS",
-                    message = "Approaching sleep cycle ($sleepStr). Terminate screens & review daily logs.",
-                    channelId = NotificationHelper.CHANNEL_ROUTINES
-                )
-                activeIds.add(id)
-            }
+        // Calculate exact trigger time for TODAY at HH:mm:00
+        val targetCal = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
         }
-    }
 
-    private fun scheduleFocusCheckpoint(
-        context: Context,
-        alarmManager: AlarmManager,
-        now: Long,
-        activeIds: MutableSet<Int>
-    ) {
-        // Daily evaluation at 18:00
-        val checkTrigger = getNextDailyOccurrence(18, 0, 0)
-        if (checkTrigger > now) {
-            val id = generateAlarmId("DISCIPLINE", "FOCUS_CHECK_18")
+        val triggerTime = targetCal.timeInMillis
+        // Only schedule if strictly in the future today (at least 30 seconds ahead)
+        if (triggerTime > now + 30_000) {
+            val id = generateAlarmId("TASK", task.id)
+            val cleanTitle = task.title.trim()
             scheduleExactAlarm(
-                context, alarmManager, id, checkTrigger,
-                targetId = "focus_checkpoint",
-                type = "FOCUS_CHECK",
-                title = "⚡ FOCUS LOAD EVALUATION",
-                message = "Daily checkpoint: Check your remaining focus hours to hit today's target.",
-                channelId = NotificationHelper.CHANNEL_DISCIPLINE
+                context, alarmManager, id, triggerTime,
+                targetId = task.id,
+                type = "TASK",
+                title = "⏰ موعد المهمة الآن",
+                message = "حان الآن موعد: $cleanTitle ($timeStr)",
+                channelId = NotificationHelper.CHANNEL_TASKS
             )
             activeIds.add(id)
         }
@@ -269,13 +173,13 @@ object SYS22AlarmScheduler {
     ) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
         val triggerTime = System.currentTimeMillis() + (snoozeMinutes * 60 * 1000L)
-        val id = generateAlarmId("SNOOZE", targetId + System.currentTimeMillis())
+        val id = generateAlarmId("SNOOZE", targetId)
 
         scheduleExactAlarm(
             context, alarmManager, id, triggerTime,
             targetId = targetId,
             type = "SNOOZE",
-            title = "⏰ SNOOZED: $title",
+            title = "⏰ تذكير مؤجل: $title",
             message = message,
             channelId = channelId
         )
@@ -374,66 +278,5 @@ object SYS22AlarmScheduler {
             } catch (_: Exception) {}
         }
         return null
-    }
-
-    private fun getNextDailyOccurrence(hour: Int, minute: Int, offsetMinutes: Int): Long {
-        val cal = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, hour)
-            set(Calendar.MINUTE, minute)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-            add(Calendar.MINUTE, offsetMinutes)
-        }
-        if (cal.timeInMillis <= System.currentTimeMillis()) {
-            cal.add(Calendar.DAY_OF_YEAR, 1)
-        }
-        return cal.timeInMillis
-    }
-
-    private fun getTodayOccurrence(hour: Int, minute: Int, offsetMinutes: Int): Long {
-        val cal = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, hour)
-            set(Calendar.MINUTE, minute)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-            add(Calendar.MINUTE, offsetMinutes)
-        }
-        return cal.timeInMillis
-    }
-
-    /**
-     * Map day index: 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat, 7=Sun
-     * to Java Calendar.DAY_OF_WEEK
-     */
-    private fun getNextOccurrence(dayIndex: Int, hour: Int, minute: Int, offsetMinutes: Int): Long {
-        val targetDayOfWeek = when (dayIndex) {
-            1 -> Calendar.MONDAY
-            2 -> Calendar.TUESDAY
-            3 -> Calendar.WEDNESDAY
-            4 -> Calendar.THURSDAY
-            5 -> Calendar.FRIDAY
-            6 -> Calendar.SATURDAY
-            7 -> Calendar.SUNDAY
-            else -> Calendar.MONDAY
-        }
-
-        val cal = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, hour)
-            set(Calendar.MINUTE, minute)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-            add(Calendar.MINUTE, offsetMinutes)
-        }
-
-        val currentDayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
-        var daysToAdd = (targetDayOfWeek - currentDayOfWeek) % 7
-        if (daysToAdd < 0) daysToAdd += 7
-
-        if (daysToAdd == 0 && cal.timeInMillis <= System.currentTimeMillis()) {
-            daysToAdd = 7
-        }
-
-        cal.add(Calendar.DAY_OF_YEAR, daysToAdd)
-        return cal.timeInMillis
     }
 }

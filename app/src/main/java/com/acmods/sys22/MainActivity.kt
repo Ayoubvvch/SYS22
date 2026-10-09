@@ -233,14 +233,7 @@ class MainActivity : AppCompatActivity() {
                 localStorage.setItem = function(key, val) {
                     originalSetItem.apply(this, arguments);
                     try {
-                        if (window.SYS22Native && [
-                            's22_criticalTargets',
-                            's22_tasks',
-                            's22_wakeTime',
-                            's22_sleepTime',
-                            's22_totalFocus',
-                            's22_goalMins'
-                        ].includes(key)) {
+                        if (window.SYS22Native && (key === 's22_criticalTargets' || key === 's22_tasks')) {
                             window.SYS22Native.onStorageUpdated(key, String(val));
                         }
                     } catch (e) {
@@ -254,11 +247,7 @@ class MainActivity : AppCompatActivity() {
                         if (window.SYS22Native) {
                             const payload = {
                                 criticalTargets: localStorage.getItem('s22_criticalTargets') || '[]',
-                                tasks: localStorage.getItem('s22_tasks') || '[]',
-                                wakeTime: localStorage.getItem('s22_wakeTime') || '03:30',
-                                sleepTime: localStorage.getItem('s22_sleepTime') || '20:30',
-                                totalFocus: parseInt(localStorage.getItem('s22_totalFocus') || '0') || 0,
-                                goalMins: parseInt(localStorage.getItem('s22_goalMins') || '180') || 180
+                                tasks: localStorage.getItem('s22_tasks') || '[]'
                             };
                             window.SYS22Native.syncAll(JSON.stringify(payload));
                         }
@@ -268,8 +257,6 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 performFullSync();
-                setTimeout(performFullSync, 1500);
-                setTimeout(performFullSync, 4000);
             })();
         """.trimIndent()
 

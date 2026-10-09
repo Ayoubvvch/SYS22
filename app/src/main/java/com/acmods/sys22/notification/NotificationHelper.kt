@@ -16,9 +16,7 @@ class NotificationHelper(private val context: Context) {
 
     companion object {
         const val CHANNEL_EXAMS = "sys22_exams_channel"
-        const val CHANNEL_SCHEDULE = "sys22_schedule_channel"
-        const val CHANNEL_ROUTINES = "sys22_routines_channel"
-        const val CHANNEL_DISCIPLINE = "sys22_discipline_channel"
+        const val CHANNEL_TASKS = "sys22_tasks_channel"
 
         const val EXTRA_NOTIFICATION_ID = "extra_notif_id"
         const val EXTRA_TARGET_ID = "extra_target_id"
@@ -29,6 +27,9 @@ class NotificationHelper(private val context: Context) {
 
         const val ACTION_SNOOZE = "com.acmods.sys22.ACTION_SNOOZE"
         const val ACTION_DISMISS = "com.acmods.sys22.ACTION_DISMISS"
+
+        // Fixed slot ID for tasks to prevent notification drawer flooding
+        const val NOTIFICATION_ID_TASK_SLOT = 2000
     }
 
     private val notificationManager: NotificationManager =
@@ -40,62 +41,35 @@ class NotificationHelper(private val context: Context) {
 
     fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            // 1. Critical Targets & Exams (Max urgency, heads-up)
+            // 1. Critical Exams & Targets (High importance, alert sound, vibration)
             val examChannel = NotificationChannel(
                 CHANNEL_EXAMS,
-                "Critical Targets & Exams",
+                "الامتحانات والمواعيد الحاسمة (Exams)",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Tiered countdown reminders for upcoming exams and major milestones."
+                description = "تنبيهات الامتحانات الهامة فقط (قبل الامتحان بيوم وقبل موعده بـ 30 دقيقة)."
                 enableLights(true)
-                lightColor = Color.parseColor("#ef4444") // Danger Red
+                lightColor = Color.parseColor("#ef4444")
                 enableVibration(true)
-                vibrationPattern = longArrayOf(0, 200, 100, 200, 100, 400)
+                vibrationPattern = longArrayOf(0, 180, 80, 180)
                 setShowBadge(true)
             }
 
-            // 2. Tactical Schedule & Timetable (High urgency)
-            val scheduleChannel = NotificationChannel(
-                CHANNEL_SCHEDULE,
-                "Tactical Schedule & Classes",
+            // 2. Scheduled Tasks (Exact time reminders)
+            val taskChannel = NotificationChannel(
+                CHANNEL_TASKS,
+                "المهام المجدولة (Scheduled Tasks)",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Reminders for scheduled timetable classes and focus sessions."
+                description = "تنبيهات المهام المحددة بوقت معين بالضبط دون تكرار مزعج."
                 enableLights(true)
-                lightColor = Color.parseColor("#38bdf8") // Cold Blue
+                lightColor = Color.parseColor("#38bdf8")
                 enableVibration(true)
-                vibrationPattern = longArrayOf(0, 150, 100, 150)
+                vibrationPattern = longArrayOf(0, 120, 60, 120)
                 setShowBadge(true)
             }
 
-            // 3. Wake & Sleep Protocols (Default urgency)
-            val routineChannel = NotificationChannel(
-                CHANNEL_ROUTINES,
-                "Wake & Sleep Protocols",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Morning awakening protocol and night wind-down alerts."
-                enableLights(true)
-                lightColor = Color.parseColor("#eab308") // Amber
-                setShowBadge(true)
-            }
-
-            // 4. Discipline & Focus Deficit (High urgency)
-            val disciplineChannel = NotificationChannel(
-                CHANNEL_DISCIPLINE,
-                "Focus & Discipline Alerts",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Tactical alerts for daily focus goals and streak maintenance."
-                enableLights(true)
-                lightColor = Color.parseColor("#a855f7") // Purple
-                enableVibration(true)
-                setShowBadge(true)
-            }
-
-            notificationManager.createNotificationChannels(
-                listOf(examChannel, scheduleChannel, routineChannel, disciplineChannel)
-            )
+            notificationManager.createNotificationChannels(listOf(examChannel, taskChannel))
         }
     }
 
@@ -107,7 +81,7 @@ class NotificationHelper(private val context: Context) {
         message: String,
         channelId: String
     ) {
-        // Main Click Intent -> Opens SYS22 MainActivity
+        // Tap Intent -> Opens SYS22
         val contentIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra(EXTRA_TARGET_ID, targetId)
@@ -120,7 +94,7 @@ class NotificationHelper(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Snooze 15-min Action Intent
+        // Snooze 10-min Action Intent
         val snoozeIntent = Intent(context, NotificationActionReceiver::class.java).apply {
             action = ACTION_SNOOZE
             putExtra(EXTRA_NOTIFICATION_ID, notificationId)
@@ -149,11 +123,10 @@ class NotificationHelper(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val accentColor = when (channelId) {
-            CHANNEL_EXAMS -> Color.parseColor("#ef4444")
-            CHANNEL_SCHEDULE -> Color.parseColor("#38bdf8")
-            CHANNEL_ROUTINES -> Color.parseColor("#eab308")
-            else -> Color.parseColor("#06b6d4")
+        val accentColor = if (channelId == CHANNEL_EXAMS) {
+            Color.parseColor("#ef4444")
+        } else {
+            Color.parseColor("#38bdf8")
         }
 
         val builder = NotificationCompat.Builder(context, channelId)
@@ -164,25 +137,12 @@ class NotificationHelper(private val context: Context) {
             .setColor(accentColor)
             .setContentIntent(contentPendingIntent)
             .setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(
-                if (type == "EXAM" || type == "SCHEDULE") NotificationCompat.CATEGORY_ALARM
-                else NotificationCompat.CATEGORY_REMINDER
-            )
-
-        // Add interactive actions
-        if (type == "EXAM" || type == "SCHEDULE") {
-            builder.addAction(
-                android.R.drawable.ic_popup_sync,
-                "SNOOZE 15M",
-                snoozePendingIntent
-            )
-            builder.addAction(
-                android.R.drawable.ic_menu_close_clear_cancel,
-                "DISMISS",
-                dismissPendingIntent
-            )
-        }
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            // Auto timeout after 45 minutes so stale notifications do not clutter the bar!
+            .setTimeoutAfter(45 * 60 * 1000L)
+            .addAction(android.R.drawable.ic_popup_sync, "تأجيل 10 د", snoozePendingIntent)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "إغلاق", dismissPendingIntent)
 
         notificationManager.notify(notificationId, builder.build())
     }

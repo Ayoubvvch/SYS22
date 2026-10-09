@@ -35,23 +35,7 @@ class SYS22NativeBridge(private val activity: MainActivity) {
                 storage.saveTasksJson(str)
             }
 
-            jsonObject.get("wakeTime")?.let {
-                storage.setWakeTime(it.asString)
-            }
-
-            jsonObject.get("sleepTime")?.let {
-                storage.setSleepTime(it.asString)
-            }
-
-            jsonObject.get("totalFocus")?.let {
-                storage.setTotalFocus(it.asInt)
-            }
-
-            jsonObject.get("goalMins")?.let {
-                storage.setGoalMins(it.asInt)
-            }
-
-            // Immediately schedule all system alarms in native AlarmManager
+            // Schedule only essential exam & task alerts
             SYS22AlarmScheduler.scheduleAll(context)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -61,17 +45,13 @@ class SYS22NativeBridge(private val activity: MainActivity) {
     @JavascriptInterface
     fun onStorageUpdated(key: String, value: String) {
         try {
-            when (key) {
-                "s22_criticalTargets" -> storage.saveCriticalTargetsJson(value)
-                "s22_tasks" -> storage.saveTasksJson(value)
-                "s22_wakeTime" -> storage.setWakeTime(value.replace("\"", ""))
-                "s22_sleepTime" -> storage.setSleepTime(value.replace("\"", ""))
-                "s22_totalFocus" -> storage.setTotalFocus(value.toIntOrNull() ?: 0)
-                "s22_goalMins" -> storage.setGoalMins(value.toIntOrNull() ?: 180)
+            if (key == "s22_criticalTargets") {
+                storage.saveCriticalTargetsJson(value)
+                SYS22AlarmScheduler.scheduleAll(context)
+            } else if (key == "s22_tasks") {
+                storage.saveTasksJson(value)
+                SYS22AlarmScheduler.scheduleAll(context)
             }
-
-            // Reschedule whenever data changes
-            SYS22AlarmScheduler.scheduleAll(context)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -101,8 +81,6 @@ class SYS22NativeBridge(private val activity: MainActivity) {
                 val effect = when (type.lowercase()) {
                     "light" -> VibrationEffect.createOneShot(25, VibrationEffect.DEFAULT_AMPLITUDE)
                     "heavy" -> VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE)
-                    "success" -> VibrationEffect.createWaveform(longArrayOf(0, 30, 40, 60), -1)
-                    "alert" -> VibrationEffect.createWaveform(longArrayOf(0, 100, 50, 100), -1)
                     else -> VibrationEffect.createOneShot(45, VibrationEffect.DEFAULT_AMPLITUDE)
                 }
                 vibrator.vibrate(effect)
@@ -121,11 +99,11 @@ class SYS22NativeBridge(private val activity: MainActivity) {
                 notificationId = 9999,
                 targetId = "test_sys22",
                 type = "EXAM",
-                title = "⚡ SYS22: SYSTEM INTEGRATION ACTIVE",
-                message = "Mobile Engine is 100% active. Tiered exam alerts, timetable reminders, and wake/sleep protocols are engaged.",
+                title = "📌 تجربة إشعار امتحان",
+                message = "هذا نموذج للإشعار التكتيكي المنضبط عند اقتراب موعد الامتحان أو المهمة.",
                 channelId = NotificationHelper.CHANNEL_EXAMS
             )
-            Toast.makeText(context, "SYS22: Test Alert Dispatched", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "SYS22: تم إرسال الإشعار التجريبي", Toast.LENGTH_SHORT).show()
         }
     }
 

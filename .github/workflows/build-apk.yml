@@ -33,31 +33,30 @@ jobs:
       - name: Prepare APK for Release
         run: |
           mkdir -p release-output
-          cp app/build/outputs/apk/debug/app-debug.apk release-output/SYS22-v2.0.0.apk
+          cp app/build/outputs/apk/debug/app-debug.apk release-output/SYS22-v2.1.0.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SYS22-v2.0.0-APK
-          path: release-output/SYS22-v2.0.0.apk
+          name: SYS22-v2.1.0-APK
+          path: release-output/SYS22-v2.1.0.apk
           if-no-files-found: error
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v2.0.0
-          name: "SYS22 v2.0.0 - 100% Mobile Integrated Edition"
+          tag_name: v2.1.0
+          name: "SYS22 v2.1.0 - Focused & Decluttered Mobile Edition"
           body: |
-            ### ⚡ SYSTEM 22: 100% Mobile Integrated Edition (v2.0.0)
+            ### ⚡ SYSTEM 22: Focused & Decluttered Edition (v2.1.0)
 
-            - **Full Android System & Notification Integration:**
-              - **Tiered Exam Countdowns:** Automated smart notifications at D-7, D-3, D-1, T-2h, and T-30m before any Critical Target / Exam.
-              - **Timetable & Class Alerts:** 10-minute warning before every recurring class or scheduled block.
-              - **Discipline & Sleep Protocols:** Automatic alerts for morning wake-up rules and evening wind-down cycles.
-              - **Doze Mode Bypass:** Utilizes `AlarmManager.setExactAndAllowWhileIdle()` to guarantee precise triggers even during deep phone sleep.
-              - **Boot Survival:** Native `BootReceiver` automatically restores all alarms after phone restart or OS updates.
-              - **Interactive Notification Actions:** One-tap [Snooze 15m] and [Dismiss] straight from the Android status bar.
+            - **Zero Spam & Focused Notifications:**
+              - **Essential Exam Alerts Only:** 1 day before (D-1) and 30 minutes before exam time. No repetitive noise.
+              - **Exact Task Reminders:** Alerts triggered ONLY for user tasks at their exact scheduled time.
+              - **No Routine/Timetable Clutter:** Removed background school bells, wake-up spam, and evening checks.
+              - **Notification Bar Hygiene:** Auto-timeout after 45 minutes and unified notification slot to prevent notification drawer clutter.
+              - **Optimized Battery & Performance:** Eliminated recursive scheduling loops.
               - **Bidirectional Native Bridge:** Real-time synchronization between the React web app and Android native engines via `SYS22NativeBridge`.
             - **High-Performance Native Android App:**
               - Fast, lightweight standalone APK (~5 MB).
@@ -71,6 +70,6 @@ jobs:
               - Full File Chooser integration for JSON Backup & Restore.
               - Audio playback enabled for Deep Work and timer beeps.
               - Double back-tap navigation.
-          files: release-output/SYS22-v2.0.0.apk
+          files: release-output/SYS22-v2.1.0.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
