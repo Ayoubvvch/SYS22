@@ -1,0 +1,71 @@
+name: Build SYS22 Pure Native Android APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build SYS22 APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant Execute Permission to Gradlew
+        run: chmod +x gradlew
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Prepare APK for Release
+        run: |
+          mkdir -p release-output
+          cp app/build/outputs/apk/release/app-release.apk release-output/SYS22-v2.2.0.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SYS22-v2.2.0-APK
+          path: release-output/SYS22-v2.2.0.apk
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/heads/main')
+        with:
+          tag_name: v2.2.0
+          name: "SYS22 v2.2.0 - Secure Production Edition with In-App Updater"
+          body: |
+            ### ⚡ SYSTEM 22: Secure Production Edition (v2.2.0)
+
+            - **Permanent Production Release Signing (No More Reinstalls):**
+              - Signed with official `sys22-release.jks` production keystore.
+              - Future updates can be installed directly over existing versions without uninstalling, preserving all offline data, logs, and settings.
+            - **Native In-App Update Engine:**
+              - Added "Check for App Updates" button in Settings.
+              - Queries GitHub Releases API, downloads latest APK in background, and triggers Android system installer automatically.
+              - Includes `REQUEST_INSTALL_PACKAGES` permission and secure Android `FileProvider`.
+            - **Privacy & Security Hardening (Open & Safe):**
+              - Purged all hardcoded Firebase API keys and secrets from the codebase.
+              - First-run tactical modal prompts for the user's personal Firebase API Key once and stores it strictly in local device storage (`localStorage`).
+              - Default parameters (`system22-27eba` and `COMMANDER_X`) prefilled for convenience.
+            - **All Core Tactical Features Maintained:**
+              - Moroccan Academic Calendar integration with automatic holiday schedule adjustments.
+              - Focused exam alerts (D-1 and T-30m) and scheduled task reminders.
+              - Deep work & Pomodoro engine with AMOLED Void dark theme (`#030712`).
+          files: release-output/SYS22-v2.2.0.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
