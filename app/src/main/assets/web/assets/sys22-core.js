@@ -221,7 +221,7 @@
             SYS22 MOBILE UPDATE ENGINE
           </div>
           <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
-            Installed Version: <strong style="color: #38bdf8;">v2.2.0 (Release Signed)</strong>
+            Installed Version: <strong style="color: #38bdf8;">v2.2.1 (Release Signed)</strong>
           </div>
           <div style="font-size: 9px; color: #64748b; margin-top: 2px;">
             Official Distribution • Seamless Over-The-Air Installation

@@ -33,39 +33,37 @@ jobs:
       - name: Prepare APK for Release
         run: |
           mkdir -p release-output
-          cp app/build/outputs/apk/release/app-release.apk release-output/SYS22-v2.2.0.apk
+          cp app/build/outputs/apk/release/app-release.apk release-output/SYS22-v2.2.1.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SYS22-v2.2.0-APK
-          path: release-output/SYS22-v2.2.0.apk
+          name: SYS22-v2.2.1-APK
+          path: release-output/SYS22-v2.2.1.apk
           if-no-files-found: error
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v2.2.0
-          name: "SYS22 v2.2.0 - Secure Production Edition with In-App Updater"
+          tag_name: v2.2.1
+          name: "SYS22 v2.2.1 - Custom Gojo Launcher Icon Edition"
+          make_latest: true
           body: |
-            ### ⚡ SYSTEM 22: Secure Production Edition (v2.2.0)
+            ### ⚡ SYSTEM 22: Custom Gojo Launcher Icon Edition (v2.2.1)
 
-            - **Permanent Production Release Signing (No More Reinstalls):**
-              - Signed with official `sys22-release.jks` production keystore.
-              - Future updates can be installed directly over existing versions without uninstalling, preserving all offline data, logs, and settings.
-            - **Native In-App Update Engine:**
-              - Added "Check for App Updates" button in Settings.
-              - Queries GitHub Releases API, downloads latest APK in background, and triggers Android system installer automatically.
-              - Includes `REQUEST_INSTALL_PACKAGES` permission and secure Android `FileProvider`.
-            - **Privacy & Security Hardening (Open & Safe):**
-              - Purged all hardcoded Firebase API keys and secrets from the codebase.
-              - First-run tactical modal prompts for the user's personal Firebase API Key once and stores it strictly in local device storage (`localStorage`).
-              - Default parameters (`system22-27eba` and `COMMANDER_X`) prefilled for convenience.
-            - **All Core Tactical Features Maintained:**
-              - Moroccan Academic Calendar integration with automatic holiday schedule adjustments.
-              - Focused exam alerts (D-1 and T-30m) and scheduled task reminders.
-              - Deep work & Pomodoro engine with AMOLED Void dark theme (`#030712`).
-          files: release-output/SYS22-v2.2.0.apk
+            - **New Custom Launcher Icon ("Nah, I'd Win"):**
+              - High-resolution Satoru Gojo custom icon with glowing cyan/blue eyes and iconic smirk.
+              - Full adaptive icon integration (`mipmap-anydpi-v26`) with safe-zone calibration so circular, squircle, and round launchers display the artwork cleanly.
+              - Complete raster density buckets: `mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi` (standard & round icons).
+              - High-res Play Store asset (512x512) and web favicon included.
+            - **Notification Heads-Up Icon Enhancement:**
+              - Notifications now display the custom icon as the large icon next to task & exam alerts.
+            - **All Core Features Preserved:**
+              - Permanent production keystore signing (`sys22-release.jks`) for seamless zero-uninstall updates.
+              - In-app OTA update engine with one-click installation.
+              - Moroccan Academic Calendar integration with automatic holiday schedules.
+              - Privacy-first zero hardcoded secrets architecture with initial Firebase API Key setup modal.
+          files: release-output/SYS22-v2.2.1.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
