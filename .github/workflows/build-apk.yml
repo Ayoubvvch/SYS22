@@ -33,37 +33,37 @@ jobs:
       - name: Prepare APK for Release
         run: |
           mkdir -p release-output
-          cp app/build/outputs/apk/release/app-release.apk release-output/SYS22-v2.2.1.apk
+          cp app/build/outputs/apk/release/app-release.apk release-output/SYS22-v2.3.0.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SYS22-v2.2.1-APK
-          path: release-output/SYS22-v2.2.1.apk
+          name: SYS22-v2.3.0-APK
+          path: release-output/SYS22-v2.3.0.apk
           if-no-files-found: error
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v2.2.1
-          name: "SYS22 v2.2.1 - Custom Gojo Launcher Icon Edition"
+          tag_name: v2.3.0
+          name: "SYS22 v2.3.0 - Daily Tactical Wisdom & Rules Edition"
           make_latest: true
           body: |
-            ### ⚡ SYSTEM 22: Custom Gojo Launcher Icon Edition (v2.2.1)
+            ### ⚡ SYSTEM 22: Daily Tactical Wisdom & Rules Edition (v2.3.0)
 
-            - **New Custom Launcher Icon ("Nah, I'd Win"):**
-              - High-resolution Satoru Gojo custom icon with glowing cyan/blue eyes and iconic smirk.
-              - Full adaptive icon integration (`mipmap-anydpi-v26`) with safe-zone calibration so circular, squircle, and round launchers display the artwork cleanly.
-              - Complete raster density buckets: `mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi` (standard & round icons).
-              - High-res Play Store asset (512x512) and web favicon included.
-            - **Notification Heads-Up Icon Enhancement:**
-              - Notifications now display the custom icon as the large icon next to task & exam alerts.
-            - **All Core Features Preserved:**
+            - **New Daily Wisdom Notification Engine (Today's Wisdom / حكمة اليوم):**
+              - Automatically picks a rule, morning protocol, or tactical note from your personal **Rules (`s22_rules`)**, **Morning Protocol (`s22_morningRules`)**, or **Notes (`s22_patterns`)**.
+              - Delivers an inspiring daily tactical notification every morning (7:00 AM) to kickstart your focus and discipline.
+              - Dedicated notification channel (`sys22_wisdom_channel`) with amber/gold tactical accent (`#f59e0b`), Gojo custom large icon, and "تم الاستيعاب ✓" quick action.
+              - Includes fallback to high-impact discipline & 2BAC principles if no custom notes/rules exist yet.
+              - Includes an instant preview button in Settings: **`[ 📜 تجربة حكمة اليوم ]`**.
+            - **All Core Features & Fixes Preserved:**
+              - Custom Satoru Gojo adaptive launcher icon & notification card icon.
               - Permanent production keystore signing (`sys22-release.jks`) for seamless zero-uninstall updates.
               - In-app OTA update engine with one-click installation.
               - Moroccan Academic Calendar integration with automatic holiday schedules.
               - Privacy-first zero hardcoded secrets architecture with initial Firebase API Key setup modal.
-          files: release-output/SYS22-v2.2.1.apk
+          files: release-output/SYS22-v2.3.0.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

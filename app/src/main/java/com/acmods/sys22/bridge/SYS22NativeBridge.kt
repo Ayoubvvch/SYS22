@@ -35,7 +35,27 @@ class SYS22NativeBridge(private val activity: MainActivity) {
                 storage.saveTasksJson(str)
             }
 
-            // Schedule only essential exam & task alerts
+            jsonObject.get("rules")?.let {
+                val str = if (it.isJsonPrimitive) it.asString else it.toString()
+                storage.saveRulesJson(str)
+            }
+
+            jsonObject.get("morningRules")?.let {
+                val str = if (it.isJsonPrimitive) it.asString else it.toString()
+                storage.saveMorningRulesJson(str)
+            }
+
+            jsonObject.get("patterns")?.let {
+                val str = if (it.isJsonPrimitive) it.asString else it.toString()
+                storage.savePatternsJson(str)
+            }
+
+            jsonObject.get("wakeTime")?.let {
+                val str = if (it.isJsonPrimitive) it.asString else it.toString()
+                storage.setWakeTime(str)
+            }
+
+            // Schedule only essential exam, task & daily wisdom alerts
             SYS22AlarmScheduler.scheduleAll(context)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -45,13 +65,15 @@ class SYS22NativeBridge(private val activity: MainActivity) {
     @JavascriptInterface
     fun onStorageUpdated(key: String, value: String) {
         try {
-            if (key == "s22_criticalTargets") {
-                storage.saveCriticalTargetsJson(value)
-                SYS22AlarmScheduler.scheduleAll(context)
-            } else if (key == "s22_tasks") {
-                storage.saveTasksJson(value)
-                SYS22AlarmScheduler.scheduleAll(context)
+            when (key) {
+                "s22_criticalTargets" -> storage.saveCriticalTargetsJson(value)
+                "s22_tasks" -> storage.saveTasksJson(value)
+                "s22_rules" -> storage.saveRulesJson(value)
+                "s22_morningRules" -> storage.saveMorningRulesJson(value)
+                "s22_patterns" -> storage.savePatternsJson(value)
+                "s22_wakeTime" -> storage.setWakeTime(value)
             }
+            SYS22AlarmScheduler.scheduleAll(context)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -116,6 +138,23 @@ class SYS22NativeBridge(private val activity: MainActivity) {
     fun checkForUpdates() {
         activity.runOnUiThread {
             com.acmods.sys22.update.UpdateManager.checkForUpdates(activity, userInitiated = true)
+        }
+    }
+
+    @JavascriptInterface
+    fun testWisdomNotification() {
+        activity.runOnUiThread {
+            val (wisdomTitle, wisdomText) = storage.getTodayWisdom()
+            val helper = NotificationHelper(context)
+            helper.showNotification(
+                notificationId = NotificationHelper.NOTIFICATION_ID_WISDOM,
+                targetId = "test_wisdom",
+                type = "WISDOM",
+                title = "⚡ حكمة اليوم: $wisdomTitle",
+                message = wisdomText,
+                channelId = NotificationHelper.CHANNEL_WISDOM
+            )
+            Toast.makeText(context, "SYS22: تم إرسال إشعار حكمة اليوم", Toast.LENGTH_SHORT).show()
         }
     }
 }

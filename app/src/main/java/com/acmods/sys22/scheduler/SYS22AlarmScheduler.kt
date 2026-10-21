@@ -51,6 +51,9 @@ object SYS22AlarmScheduler {
             scheduleExactUserTask(context, alarmManager, task, now, activeAlarmIds)
         }
 
+        // 4. Schedule Daily Wisdom from Rules & Notes (7:00 AM every morning)
+        scheduleDailyWisdom(context, alarmManager, now, activeAlarmIds)
+
         // Save active IDs
         storage.saveActiveAlarmIds(activeAlarmIds)
     }
@@ -161,6 +164,60 @@ object SYS22AlarmScheduler {
             )
             activeIds.add(id)
         }
+    }
+
+    private fun scheduleDailyWisdom(
+        context: Context,
+        alarmManager: AlarmManager,
+        now: Long,
+        activeIds: MutableSet<Int>
+    ) {
+        val cal = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 7)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        // If today's 07:00 AM has already passed (or is less than 30s away), schedule for tomorrow 07:00 AM
+        if (cal.timeInMillis <= now + 30_000) {
+            cal.add(Calendar.DAY_OF_YEAR, 1)
+        }
+
+        val triggerTime = cal.timeInMillis
+        val id = NotificationHelper.NOTIFICATION_ID_WISDOM
+
+        scheduleExactAlarm(
+            context, alarmManager, id, triggerTime,
+            targetId = "daily_wisdom",
+            type = "WISDOM",
+            title = "⚡ حكمة اليوم",
+            message = "",
+            channelId = NotificationHelper.CHANNEL_WISDOM
+        )
+        activeIds.add(id)
+    }
+
+    fun scheduleNextDailyWisdom(context: Context) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
+        val cal = Calendar.getInstance().apply {
+            add(Calendar.DAY_OF_YEAR, 1)
+            set(Calendar.HOUR_OF_DAY, 7)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val triggerTime = cal.timeInMillis
+        val id = NotificationHelper.NOTIFICATION_ID_WISDOM
+
+        scheduleExactAlarm(
+            context, alarmManager, id, triggerTime,
+            targetId = "daily_wisdom",
+            type = "WISDOM",
+            title = "⚡ حكمة اليوم",
+            message = "",
+            channelId = NotificationHelper.CHANNEL_WISDOM
+        )
     }
 
     fun scheduleSnooze(

@@ -46,6 +46,26 @@ data class ScheduleSettings(
 )
 
 /**
+ * Data model for Custom Rules (stored in s22_rules)
+ */
+data class RuleItem(
+    val id: Any? = null,
+    val title: String = "",
+    val text: String = "",
+    val pinned: Boolean? = false
+)
+
+/**
+ * Data model for Notes & Patterns (stored in s22_patterns)
+ */
+data class PatternItem(
+    val id: Any? = null,
+    val text: String = "",
+    val pinned: Boolean? = false,
+    val timestamp: String? = null
+)
+
+/**
  * Payload sent inside pending intents for alarms
  */
 data class AlarmPayload(

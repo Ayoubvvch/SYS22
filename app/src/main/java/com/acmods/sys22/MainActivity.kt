@@ -233,7 +233,15 @@ class MainActivity : AppCompatActivity() {
                 localStorage.setItem = function(key, val) {
                     originalSetItem.apply(this, arguments);
                     try {
-                        if (window.SYS22Native && (key === 's22_criticalTargets' || key === 's22_tasks')) {
+                        const trackedKeys = [
+                            's22_criticalTargets',
+                            's22_tasks',
+                            's22_rules',
+                            's22_morningRules',
+                            's22_patterns',
+                            's22_wakeTime'
+                        ];
+                        if (window.SYS22Native && trackedKeys.includes(key)) {
                             window.SYS22Native.onStorageUpdated(key, String(val));
                         }
                     } catch (e) {
@@ -247,7 +255,11 @@ class MainActivity : AppCompatActivity() {
                         if (window.SYS22Native) {
                             const payload = {
                                 criticalTargets: localStorage.getItem('s22_criticalTargets') || '[]',
-                                tasks: localStorage.getItem('s22_tasks') || '[]'
+                                tasks: localStorage.getItem('s22_tasks') || '[]',
+                                rules: localStorage.getItem('s22_rules') || '[]',
+                                morningRules: localStorage.getItem('s22_morningRules') || '[]',
+                                patterns: localStorage.getItem('s22_patterns') || '[]',
+                                wakeTime: localStorage.getItem('s22_wakeTime') || '03:30'
                             };
                             window.SYS22Native.syncAll(JSON.stringify(payload));
                         }

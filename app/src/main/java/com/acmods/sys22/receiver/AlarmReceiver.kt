@@ -3,7 +3,9 @@ package com.acmods.sys22.receiver
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.acmods.sys22.data.StorageManager
 import com.acmods.sys22.notification.NotificationHelper
+import com.acmods.sys22.scheduler.SYS22AlarmScheduler
 
 class AlarmReceiver : BroadcastReceiver() {
 
@@ -14,6 +16,23 @@ class AlarmReceiver : BroadcastReceiver() {
         val title = intent.getStringExtra(NotificationHelper.EXTRA_TITLE) ?: "SYS22"
         val message = intent.getStringExtra(NotificationHelper.EXTRA_MESSAGE) ?: ""
         val channelId = intent.getStringExtra(NotificationHelper.EXTRA_CHANNEL_ID) ?: NotificationHelper.CHANNEL_TASKS
+
+        if (type == "WISDOM") {
+            val storage = StorageManager.getInstance(context)
+            val (wisdomTitle, wisdomText) = storage.getTodayWisdom()
+            val helper = NotificationHelper(context)
+            helper.showNotification(
+                notificationId = NotificationHelper.NOTIFICATION_ID_WISDOM,
+                targetId = "daily_wisdom",
+                type = "WISDOM",
+                title = "⚡ حكمة اليوم: $wisdomTitle",
+                message = wisdomText,
+                channelId = NotificationHelper.CHANNEL_WISDOM
+            )
+            // Automatically schedule next day's wisdom
+            SYS22AlarmScheduler.scheduleNextDailyWisdom(context)
+            return
+        }
 
         val helper = NotificationHelper(context)
         helper.showNotification(

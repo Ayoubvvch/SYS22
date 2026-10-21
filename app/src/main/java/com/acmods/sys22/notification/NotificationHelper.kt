@@ -18,6 +18,7 @@ class NotificationHelper(private val context: Context) {
     companion object {
         const val CHANNEL_EXAMS = "sys22_exams_channel"
         const val CHANNEL_TASKS = "sys22_tasks_channel"
+        const val CHANNEL_WISDOM = "sys22_wisdom_channel"
 
         const val EXTRA_NOTIFICATION_ID = "extra_notif_id"
         const val EXTRA_TARGET_ID = "extra_target_id"
@@ -31,6 +32,7 @@ class NotificationHelper(private val context: Context) {
 
         // Fixed slot ID for tasks to prevent notification drawer flooding
         const val NOTIFICATION_ID_TASK_SLOT = 2000
+        const val NOTIFICATION_ID_WISDOM = 5000
     }
 
     private val notificationManager: NotificationManager =
@@ -70,7 +72,21 @@ class NotificationHelper(private val context: Context) {
                 setShowBadge(true)
             }
 
-            notificationManager.createNotificationChannels(listOf(examChannel, taskChannel))
+            // 3. Daily Wisdom & Tactical Rules (Inspiring daily reminder)
+            val wisdomChannel = NotificationChannel(
+                CHANNEL_WISDOM,
+                "حكمة اليوم والانضباط التكتيكي (Daily Wisdom)",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "حكمة وتوجيه يومي مقتبس من قواعدك وملاحظاتك لتعزيز الانضباط والتركيز."
+                enableLights(true)
+                lightColor = Color.parseColor("#f59e0b")
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 100, 50, 100)
+                setShowBadge(true)
+            }
+
+            notificationManager.createNotificationChannels(listOf(examChannel, taskChannel, wisdomChannel))
         }
     }
 
@@ -124,15 +140,21 @@ class NotificationHelper(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val accentColor = if (channelId == CHANNEL_EXAMS) {
-            Color.parseColor("#ef4444")
-        } else {
-            Color.parseColor("#38bdf8")
+        val accentColor = when (channelId) {
+            CHANNEL_EXAMS -> Color.parseColor("#ef4444")
+            CHANNEL_WISDOM -> Color.parseColor("#f59e0b")
+            else -> Color.parseColor("#38bdf8")
         }
 
         val largeIcon = try {
             BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher)
         } catch (_: Exception) { null }
+
+        val timeoutMillis = if (channelId == CHANNEL_WISDOM) {
+            3 * 3600 * 1000L // Keep wisdom visible for 3 hours
+        } else {
+            45 * 60 * 1000L // 45 minutes for task/exam alerts
+        }
 
         val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
@@ -149,10 +171,14 @@ class NotificationHelper(private val context: Context) {
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
-            // Auto timeout after 45 minutes so stale notifications do not clutter the bar!
-            .setTimeoutAfter(45 * 60 * 1000L)
-            .addAction(android.R.drawable.ic_popup_sync, "تأجيل 10 د", snoozePendingIntent)
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "إغلاق", dismissPendingIntent)
+            .setTimeoutAfter(timeoutMillis)
+
+        if (channelId == CHANNEL_WISDOM) {
+            builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "تم الاستيعاب ✓", dismissPendingIntent)
+        } else {
+            builder.addAction(android.R.drawable.ic_popup_sync, "تأجيل 10 د", snoozePendingIntent)
+            builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "إغلاق", dismissPendingIntent)
+        }
 
         notificationManager.notify(notificationId, builder.build())
     }

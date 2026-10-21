@@ -221,42 +221,69 @@
             SYS22 MOBILE UPDATE ENGINE
           </div>
           <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">
-            Installed Version: <strong style="color: #38bdf8;">v2.2.1 (Release Signed)</strong>
+            Installed Version: <strong style="color: #38bdf8;">v2.3.0 (Release Signed)</strong>
           </div>
           <div style="font-size: 9px; color: #64748b; margin-top: 2px;">
             Official Distribution • Seamless Over-The-Air Installation
           </div>
         </div>
 
-        <button id="sys22_trigger_update_btn" style="
-          background: #0284c7;
-          hover:background: #0369a1;
-          color: #ffffff;
-          border: 1px solid #38bdf8;
-          padding: 10px 16px;
-          font-weight: bold;
-          font-size: 12px;
-          border-radius: 2px;
-          cursor: pointer;
-          letter-spacing: 1px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-family: 'JetBrains Mono', monospace;
-        ">
-          <span>🔄</span> CHECK FOR APP UPDATES
-        </button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button id="sys22_test_wisdom_btn" style="
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            border: 1px solid #f59e0b;
+            padding: 8px 12px;
+            font-weight: bold;
+            font-size: 11px;
+            border-radius: 2px;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'JetBrains Mono', monospace;
+          ">
+            <span>📜</span> تجربة حكمة اليوم
+          </button>
+
+          <button id="sys22_trigger_update_btn" style="
+            background: #0284c7;
+            color: #ffffff;
+            border: 1px solid #38bdf8;
+            padding: 8px 14px;
+            font-weight: bold;
+            font-size: 11px;
+            border-radius: 2px;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'JetBrains Mono', monospace;
+          ">
+            <span>🔄</span> CHECK FOR UPDATES
+          </button>
+        </div>
       </div>
     `;
 
     // Insert updateCard right above the Cloud Database Config or at the top of the settings panel
     targetHeader.parentElement.insertBefore(updateCard, targetHeader);
 
+    document.getElementById('sys22_test_wisdom_btn').addEventListener('click', () => {
+      if (window.SYS22Native && typeof window.SYS22Native.testWisdomNotification === 'function') {
+        window.SYS22Native.testWisdomNotification();
+      } else {
+        alert('حكمة اليوم متاحة حصرياً عبر تطبيق الأندرويد.');
+      }
+    });
+
     document.getElementById('sys22_trigger_update_btn').addEventListener('click', () => {
       if (window.SYS22Native && typeof window.SYS22Native.checkForUpdates === 'function') {
         window.SYS22Native.checkForUpdates();
       } else {
-        alert('SYS22 v2.2.0: You are running the latest version.');
+        alert('SYS22 v2.3.0: You are running the latest version.');
       }
     });
   }
