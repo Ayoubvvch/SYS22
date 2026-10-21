@@ -142,6 +142,11 @@ class SYS22NativeBridge(private val activity: MainActivity) {
     }
 
     @JavascriptInterface
+    fun triggerCloudSync() {
+        activity.evaluateJs("window.sys22ForceCloudSync && window.sys22ForceCloudSync();")
+    }
+
+    @JavascriptInterface
     fun testWisdomNotification() {
         activity.runOnUiThread {
             val (wisdomTitle, wisdomText) = storage.getTodayWisdom()

@@ -2,14 +2,14 @@
 
 <div align="center">
 
-![SYS22 Banner](https://img.shields.io/badge/SYS22-V2.3.0%20RELEASE-0284c7?style=for-the-badge&logo=android&logoColor=white)
+![SYS22 Banner](https://img.shields.io/badge/SYS22-v2.4.0%20RELEASE-0284c7?style=for-the-badge&logo=android&logoColor=white)
 ![Build Status](https://img.shields.io/badge/CI%2FCD-GITHUB%20ACTIONS-success?style=for-the-badge&logo=githubactions&logoColor=white)
 ![Architecture](https://img.shields.io/badge/PLATFORM-ANDROID%20%7C%20HYBRID%20REACT-10b981?style=for-the-badge&logo=react&logoColor=white)
 ![Security](https://img.shields.io/badge/SECURITY-ZERO%20EXPOSED%20KEYS-f59e0b?style=for-the-badge&logo=securityscorecard&logoColor=white)
 
 **An ultra-focused tactical operating system and academic command center designed for rigorous discipline, circadian alignment, and high-performance study management.**
 
-[Download Latest APK (v2.3.0)](https://github.com/Ayoubvvch/SYS22/releases/latest) • [Features](#-core-features) • [Architecture](#-system-architecture) • [Security & Privacy](#-security--privacy-architecture) • [Building From Source](#-building-from-source)
+[Download Latest APK (v2.4.0)](https://github.com/Ayoubvvch/SYS22/releases/latest) • [Features](#-core-features) • [Architecture](#-system-architecture) • [Security & Privacy](#-security--privacy-architecture) • [Building From Source](#-building-from-source)
 
 </div>
 
@@ -40,7 +40,14 @@ Built with a high-performance **Kotlin Native Android wrapper** hosting an offli
   * **Interactive Quick Actions:** Built-in **Snooze (15 min)** and **Dismiss** buttons directly in the notification shade.
 * **Reboot Resilience:** A native `BootReceiver` restores and reschedules all pending alarms after device restart.
 
-### 2. 🇲🇦 Moroccan Academic Calendar Intelligence
+### 2. ⚡ Bidirectional Web Cloud Synchronization Engine (Brotherhood Architecture)
+* **Zero-Lag Background Resume Sync:** Automatically checks Firestore parity via instant REST fetch whenever the app returns to foreground from background (`onResume`), bypassing dormant WebSocket delays.
+* **Smart Non-Destructive Merging:** Intelligent union and state preservation for Tasks, Critical Targets (Exams), Rules, and Notes so changes made on the web and mobile never overwrite each other.
+* **Zero-Delay Native Alarm Scheduling:** Hooks real-time cloud updates directly into Android's native AlarmManager without debounce delays, ensuring exam countdowns and task alarms are 100% synchronized.
+* **Dedicated Cloud Synchronizer Dashboard:** Full control center in Settings with one-tap Master Sync (`[ ⚡ مزامنة فورية كاملة ]`), explicit Cloud Pull, and explicit Cloud Push.
+* **Tactical Real-Time Status Pill:** Header badge in mobile view showing live sync state (`🟢 SYNCED`, `🔄 SYNCING`, `⚠️ ERROR`) and exact time of last synchronization.
+
+### 3. 🇲🇦 Moroccan Academic Calendar Intelligence
 * **Ministry Schedule Integration:** Pre-configured with the official Moroccan Ministry of National Education calendar (15 official vacation periods).
 * **Automatic Routine Suppression:** During intermediate vacations (1st through 4th mid-term breaks, mid-year recess, religious & national holidays), all recurring school blocks are automatically suppressed.
 * **Full Revision Mode:** Vacations automatically convert your daily schedule into full-day revision and deep study blocks.
@@ -117,7 +124,7 @@ SYS22/
 │   └── workflows/
 │       └── build-apk.yml           # Automated Java 17 CI/CD release workflow
 ├── app/
-│   ├── build.gradle                # Android configuration, v2.2.0, signingConfigs
+│   ├── build.gradle                # Android configuration, v2.4.0, signingConfigs
 │   ├── sys22-release.jks           # Production release keystore (10,000 days validity)
 │   └── src/
 │       └── main/
@@ -195,11 +202,12 @@ SYS22/
 
 Releases follow [Semantic Versioning](https://semver.org/). Every push to the `main` branch triggers the GitHub Actions pipeline to compile, sign, verify, and publish a standalone release APK:
 
-* **Current Release:** [`v2.3.0`](https://github.com/Ayoubvvch/SYS22/releases/tag/v2.3.0)
-* **Download:** [Direct APK Download](https://github.com/Ayoubvvch/SYS22/releases/download/v2.3.0/SYS22-v2.3.0.apk)
+* **Current Release:** [`v2.4.0`](https://github.com/Ayoubvvch/SYS22/releases/tag/v2.4.0)
+* **Download:** [Direct APK Download](https://github.com/Ayoubvvch/SYS22/releases/download/v2.4.0/SYS22-v2.4.0.apk)
 
 ---
 
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE) — free and open for educational and personal productivity use.
+

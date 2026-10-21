@@ -275,9 +275,17 @@ class MainActivity : AppCompatActivity() {
         view?.evaluateJavascript(script, null)
     }
 
+    fun evaluateJs(script: String, callback: ValueCallback<String>? = null) {
+        runOnUiThread {
+            webView.evaluateJavascript(script, callback)
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         webView.onResume()
+        // Instantly trigger cloud synchronization check with website on app resume
+        webView.evaluateJavascript("window.sys22OnResume && window.sys22OnResume();", null)
     }
 
     override fun onPause() {
